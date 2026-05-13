@@ -18,6 +18,7 @@
     "@donate/database": "workspace:*",
     "@donate/auth": "workspace:*",
     "@donate/utils": "workspace:*",
+    "bcrypt": "^5.1.1",
     "zod": "^3.22.4"
   },
   "devDependencies": {

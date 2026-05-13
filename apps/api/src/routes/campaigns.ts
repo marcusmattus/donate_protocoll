@@ -1,9 +1,9 @@
 import { FastifyInstance } from 'fastify';
-import { db } from '@donate/database';
+import { prisma } from '@donate/database';
 
 export async function campaignRoutes(fastify: FastifyInstance) {
   fastify.get('/', async () => {
-    const campaigns = await db.campaign.findMany({
+    const campaigns = await prisma.campaign.findMany({
       where: { status: 'ACTIVE' },
       include: {
         recipient: {
@@ -19,7 +19,7 @@ export async function campaignRoutes(fastify: FastifyInstance) {
   fastify.get('/:id', async (request) => {
     const { id } = request.params as { id: string };
 
-    const campaign = await db.campaign.findUnique({
+    const campaign = await prisma.campaign.findUnique({
       where: { id },
       include: {
         recipient: true,
@@ -38,7 +38,7 @@ export async function campaignRoutes(fastify: FastifyInstance) {
   });
 
   fastify.get('/recipients', async () => {
-    const recipients = await db.recipientProfile.findMany({
+    const recipients = await prisma.recipientProfile.findMany({
       where: { status: 'ACTIVE' },
       select: {
         id: true,
@@ -56,7 +56,7 @@ export async function campaignRoutes(fastify: FastifyInstance) {
   fastify.get('/recipients/:id', async (request) => {
     const { id } = request.params as { id: string };
 
-    const recipient = await db.recipientProfile.findUnique({
+    const recipient = await prisma.recipientProfile.findUnique({
       where: { id },
       include: {
         campaigns: { where: { status: 'ACTIVE' } },

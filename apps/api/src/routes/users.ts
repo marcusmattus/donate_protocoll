@@ -1,6 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { db } from '@donate/database';
+import { prisma } from '@donate/database';
 
 const UpdateProfileSchema = z.object({
   name: z.string().min(2).optional(),
@@ -11,7 +11,7 @@ export async function userRoutes(fastify: FastifyInstance) {
   fastify.get('/me', async (request) => {
     await request.jwtVerify();
 
-    const user = await db.user.findUnique({
+    const user = await prisma.user.findUnique({
       where: { id: request.user.sub },
       select: {
         id: true,
@@ -34,7 +34,7 @@ export async function userRoutes(fastify: FastifyInstance) {
 
     const data = UpdateProfileSchema.parse(request.body);
 
-    const user = await db.user.update({
+    const user = await prisma.user.update({
       where: { id: request.user.sub },
       data,
       select: {
@@ -51,7 +51,7 @@ export async function userRoutes(fastify: FastifyInstance) {
   fastify.delete('/me', async (request, reply) => {
     await request.jwtVerify();
 
-    await db.user.update({
+    await prisma.user.update({
       where: { id: request.user.sub },
       data: { status: 'DELETED' },
     });
@@ -62,7 +62,7 @@ export async function userRoutes(fastify: FastifyInstance) {
   fastify.get('/me/impact', async (request) => {
     await request.jwtVerify();
 
-    const donations = await db.donation.groupBy({
+    const donations = await prisma.donation.groupBy({
       by: ['userId'],
       where: { userId: request.user.sub },
       _sum: { amount: true },
@@ -70,11 +70,11 @@ export async function userRoutes(fastify: FastifyInstance) {
     });
 
     const totalDonated = donations[0]?._sum.amount || 0;
-    const totalTrades = await db.tradeEvent.count({
+    const totalTrades = await prisma.tradeEvent.count({
       where: { userId: request.user.sub },
     });
 
-    const recipients = await db.recipientProfile.count({
+    const recipients = await prisma.recipientProfile.count({
       where: {
         donationAllocations: {
           some: {
@@ -97,7 +97,7 @@ export async function userRoutes(fastify: FastifyInstance) {
   fastify.get('/:id', async (request) => {
     const { id } = request.params as { id: string };
 
-    const user = await db.user.findUnique({
+    const user = await prisma.user.findUnique({
       where: { id },
       select: {
         id: true,

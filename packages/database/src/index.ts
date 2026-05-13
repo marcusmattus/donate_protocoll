@@ -1,8 +1,5 @@
 import { PrismaClient } from '@prisma/client';
 
-// Singleton pattern for Prisma Client
-// Prevents multiple instances in development with hot reload
-
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };
@@ -17,15 +14,12 @@ if (process.env.NODE_ENV !== 'production') {
   globalForPrisma.prisma = prisma;
 }
 
-// Export Prisma types for use across the monorepo
 export * from '@prisma/client';
 
-// Helper function to gracefully disconnect
 export async function disconnectDatabase() {
   await prisma.$disconnect();
 }
 
-// Health check function
 export async function checkDatabaseHealth(): Promise<boolean> {
   try {
     await prisma.$queryRaw`SELECT 1`;

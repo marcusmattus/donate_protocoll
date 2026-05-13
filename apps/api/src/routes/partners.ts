@@ -1,6 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { db } from '@donate/database';
+import { prisma } from '@donate/database';
 
 const SubmitTradeSchema = z.object({
   externalTradeId: z.string(),
@@ -21,7 +21,7 @@ export async function partnerRoutes(fastify: FastifyInstance) {
       return { error: 'Missing API key' };
     }
 
-    const partner = await db.partner.findFirst({
+    const partner = await prisma.partner.findFirst({
       where: {
         apiKeys: {
           some: {
@@ -39,7 +39,7 @@ export async function partnerRoutes(fastify: FastifyInstance) {
 
     const data = SubmitTradeSchema.parse(request.body);
 
-    const trade = await db.tradeEvent.create({
+    const trade = await prisma.tradeEvent.create({
       data: {
         externalTradeId: data.externalTradeId,
         symbol: data.symbol,
@@ -64,7 +64,7 @@ export async function partnerRoutes(fastify: FastifyInstance) {
       throw new Error('Unauthorized');
     }
 
-    const partner = await db.partner.findFirst({
+    const partner = await prisma.partner.findFirst({
       where: {
         apiKeys: {
           some: {
@@ -79,7 +79,7 @@ export async function partnerRoutes(fastify: FastifyInstance) {
       throw new Error('Invalid API key');
     }
 
-    const webhooks = await db.webhook.findMany({
+    const webhooks = await prisma.webhook.findMany({
       where: { partnerId: partner.id },
     });
 
@@ -93,7 +93,7 @@ export async function partnerRoutes(fastify: FastifyInstance) {
       throw new Error('Unauthorized');
     }
 
-    const partner = await db.partner.findFirst({
+    const partner = await prisma.partner.findFirst({
       where: {
         apiKeys: {
           some: {
@@ -108,11 +108,11 @@ export async function partnerRoutes(fastify: FastifyInstance) {
       throw new Error('Invalid API key');
     }
 
-    const tradeCount = await db.tradeEvent.count({
+    const tradeCount = await prisma.tradeEvent.count({
       where: { partnerId: partner.id },
     });
 
-    const totalVolume = await db.tradeEvent.aggregate({
+    const totalVolume = await prisma.tradeEvent.aggregate({
       where: { partnerId: partner.id },
       _sum: { tradeValue: true },
     });

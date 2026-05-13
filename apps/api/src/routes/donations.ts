@@ -1,6 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { db } from '@donate/database';
+import { prisma } from '@donate/database';
 
 const CreateDonationSchema = z.object({
   recipientId: z.string().uuid(),
@@ -27,7 +27,7 @@ export async function donationRoutes(fastify: FastifyInstance) {
   fastify.get('/', async (request) => {
     await request.jwtVerify();
 
-    const donations = await db.donation.findMany({
+    const donations = await prisma.donation.findMany({
       where: { userId: request.user.sub },
       include: {
         allocations: {
@@ -45,7 +45,7 @@ export async function donationRoutes(fastify: FastifyInstance) {
 
     const data = CreateDonationSchema.parse(request.body);
 
-    const recipient = await db.recipientProfile.findUnique({
+    const recipient = await prisma.recipientProfile.findUnique({
       where: { id: data.recipientId },
     });
 
@@ -53,7 +53,7 @@ export async function donationRoutes(fastify: FastifyInstance) {
       throw new Error('Recipient not found');
     }
 
-    const donation = await db.donation.create({
+    const donation = await prisma.donation.create({
       data: {
         userId: request.user.sub,
         amount: data.amount,
@@ -76,7 +76,7 @@ export async function donationRoutes(fastify: FastifyInstance) {
   fastify.get('/rules', async (request) => {
     await request.jwtVerify();
 
-    const rules = await db.donationRule.findMany({
+    const rules = await prisma.donationRule.findMany({
       where: { userId: request.user.sub },
       orderBy: { createdAt: 'desc' },
     });
@@ -89,7 +89,7 @@ export async function donationRoutes(fastify: FastifyInstance) {
 
     const data = CreateRuleSchema.parse(request.body);
 
-    const rule = await db.donationRule.create({
+    const rule = await prisma.donationRule.create({
       data: {
         userId: request.user.sub,
         name: data.name,
@@ -109,7 +109,7 @@ export async function donationRoutes(fastify: FastifyInstance) {
   fastify.get('/summary', async (request) => {
     await request.jwtVerify();
 
-    const result = await db.donation.groupBy({
+    const result = await prisma.donation.groupBy({
       by: ['userId', 'status'],
       where: { userId: request.user.sub },
       _sum: { amount: true },

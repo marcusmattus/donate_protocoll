@@ -1,6 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { db } from '@donate/database';
+import { prisma } from '@donate/database';
 
 const ReviewPartnerSchema = z.object({
   requestId: z.string().uuid(),
@@ -16,7 +16,7 @@ export async function adminRoutes(fastify: FastifyInstance) {
       throw new Error('Forbidden');
     }
 
-    const requests = await db.partnerRequest.findMany({
+    const requests = await prisma.partnerRequest.findMany({
       orderBy: { createdAt: 'desc' },
     });
 
@@ -32,7 +32,7 @@ export async function adminRoutes(fastify: FastifyInstance) {
 
     const data = ReviewPartnerSchema.parse(request.body);
 
-    const partnerRequest = await db.partnerRequest.update({
+    const partnerRequest = await prisma.partnerRequest.update({
       where: { id: data.requestId },
       data: {
         status: data.decision,
@@ -42,7 +42,7 @@ export async function adminRoutes(fastify: FastifyInstance) {
     });
 
     if (data.decision === 'APPROVED') {
-      await db.partner.create({
+      await prisma.partner.create({
         data: {
           companyName: partnerRequest.companyName,
           email: partnerRequest.email,
@@ -62,7 +62,7 @@ export async function adminRoutes(fastify: FastifyInstance) {
       throw new Error('Forbidden');
     }
 
-    const flags = await db.fraudFlag.findMany({
+    const flags = await prisma.fraudFlag.findMany({
       where: { status: 'PENDING' },
       orderBy: { createdAt: 'desc' },
     });
@@ -77,7 +77,7 @@ export async function adminRoutes(fastify: FastifyInstance) {
       throw new Error('Forbidden');
     }
 
-    const logs = await db.auditLog.findMany({
+    const logs = await prisma.auditLog.findMany({
       orderBy: { createdAt: 'desc' },
       take: 100,
     });

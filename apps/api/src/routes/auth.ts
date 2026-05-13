@@ -1,7 +1,10 @@
 import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { hash, verify } from '@donate/auth';
-import { db } from '@donate/database';
+import { hash, compare } from 'bcrypt';
+import jwt from 'jsonwebtoken';
+import { prisma } from '@donate/database';
+
+const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-key-change-in-production';
 
 const RegisterSchema = z.object({
   email: z.string().email(),
@@ -14,11 +17,19 @@ const LoginSchema = z.object({
   password: z.string(),
 });
 
+function generateToken(user: { id: string; email: string }) {
+  return jwt.sign(
+    { userId: user.id, email: user.email },
+    JWT_SECRET,
+    { expiresIn: '7d' }
+  );
+}
+
 export async function authRoutes(fastify: FastifyInstance) {
   fastify.post('/register', async (request, reply) => {
     const data = RegisterSchema.parse(request.body);
 
-    const existingUser = await db.user.findUnique({
+    const existingUser = await prisma.user.findUnique({
       where: { email: data.email },
     });
 
@@ -27,67 +38,39 @@ export async function authRoutes(fastify: FastifyInstance) {
       return { error: 'User already exists' };
     }
 
-    const passwordHash = await hash(data.password);
+    const passwordHash = await hash(data.password, 12);
 
-    const user = await db.user.create({
+    const user = await prisma.user.create({
       data: {
         email: data.email,
         name: data.name,
         passwordHash,
-        status: 'ACTIVE',
       },
     });
 
-    const token = fastify.jwt.sign({
-      sub: user.id,
-      email: user.email,
-      role: 'USER',
-    });
-
-    reply.statusCode = 201;
+    const token = generateToken(user);
     return { token, user: { id: user.id, email: user.email, name: user.name } };
   });
 
   fastify.post('/login', async (request, reply) => {
     const data = LoginSchema.parse(request.body);
 
-    const user = await db.user.findUnique({
+    const user = await prisma.user.findUnique({
       where: { email: data.email },
     });
 
     if (!user) {
       reply.statusCode = 401;
-      return { error: 'Invalid credentials' };
+      return { error: 'Invalid email or password' };
     }
 
-    const isValid = await verify(data.password, user.passwordHash);
-    if (!isValid) {
+    const passwordValid = await compare(data.password, user.passwordHash);
+    if (!passwordValid) {
       reply.statusCode = 401;
-      return { error: 'Invalid credentials' };
+      return { error: 'Invalid email or password' };
     }
 
-    const token = fastify.jwt.sign({
-      sub: user.id,
-      email: user.email,
-      role: 'USER',
-    });
-
-    return { token, user: { id: user.id, email: user.email, name: user.name } };
-  });
-
-  fastify.post('/logout', async (request, reply) => {
-    reply.send({ success: true });
-  });
-
-  fastify.post('/refresh', async (request) => {
-    await request.jwtVerify();
-
-    const token = fastify.jwt.sign({
-      sub: request.user.sub,
-      email: request.user.email,
-      role: request.user.role,
-    });
-
-    return { token };
+    const token = generateToken(user);
+    return { token, user: { id: user.id, email: user.email } };
   });
 }
