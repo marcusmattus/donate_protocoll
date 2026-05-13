@@ -1,0 +1,136 @@
+version: '3.9'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: donate-db
+    environment:
+      POSTGRES_USER: ${DB_USER:-donate}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-donate}
+      POSTGRES_DB: donate_protocol
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-donate}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - donate-network
+    restart: unless-stopped
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: donate-redis
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-redis}
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - donate-network
+    restart: unless-stopped
+
+  # API Server
+  api:
+    image: donate-api:latest
+    container_name: donate-api
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    environment:
+      NODE_ENV: production
+      API_PORT: 4001
+      API_HOST: 0.0.0.0
+      DATABASE_URL: postgresql://${DB_USER:-donate}:${DB_PASSWORD:-donate}@postgres:5432/donate_protocol
+      REDIS_URL: redis://:${REDIS_PASSWORD:-redis}@redis:6379
+      JWT_SECRET: ${JWT_SECRET}
+      CORS_ORIGINS: ${CORS_ORIGINS}
+    ports:
+      - "4001:4001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - donate-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4001/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Web Application
+  web:
+    image: donate-web:latest
+    container_name: donate-web
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_URL: ${API_URL}
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+    networks:
+      - donate-network
+    restart: unless-stopped
+
+  # Admin Dashboard
+  admin:
+    image: donate-admin:latest
+    container_name: donate-admin
+    build:
+      context: .
+      dockerfile: apps/admin/Dockerfile
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_URL: ${API_URL}
+    ports:
+      - "3002:3002"
+    depends_on:
+      - api
+    networks:
+      - donate-network
+    restart: unless-stopped
+
+  # Nginx Reverse Proxy (Optional)
+  nginx:
+    image: nginx:alpine
+    container_name: donate-nginx
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - api
+      - web
+      - admin
+    networks:
+      - donate-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  donate-network:
+    driver: bridge

@@ -12,8 +12,8 @@ import { partnerRoutes } from './routes/partners';
 import { adminRoutes } from './routes/admin';
 import { healthRoutes } from './routes/health';
 
-const PORT = parseInt(process.env.PORT || '3001', 10);
-const HOST = process.env.HOST || 'localhost';
+const PORT = parseInt(process.env.API_PORT || process.env.PORT || '4001', 10);
+const HOST = process.env.HOST || '0.0.0.0';
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-key-change-in-production';
 
 export async function createServer() {
