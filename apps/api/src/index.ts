@@ -53,12 +53,6 @@ export async function createServer() {
     }
   });
 
-  // Health check route
-  fastify.get('/health', async () => ({
-    status: 'ok',
-    timestamp: new Date().toISOString(),
-  }));
-
   // API routes
   await fastify.register(healthRoutes, { prefix: '/health' });
   await fastify.register(authRoutes, { prefix: '/auth' });
