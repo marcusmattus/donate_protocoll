@@ -1,0 +1,772 @@
+// Donate Protocol - Production Database Schema
+// This schema defines the complete data model for the platform
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================================
+// USER MANAGEMENT
+// ============================================================================
+
+model User {
+  id                String    @id @default(uuid())
+  email             String    @unique
+  passwordHash      String?   @map("password_hash")
+  name              String
+  status            UserStatus @default(ACTIVE)
+  role              UserRole   @default(USER)
+  emailVerified     Boolean   @default(false) @map("email_verified")
+  emailVerifiedAt   DateTime? @map("email_verified_at")
+  kycStatus         KYCStatus @default(PENDING) @map("kyc_status")
+  kycVerifiedAt     DateTime? @map("kyc_verified_at")
+  avatar            String?
+  metadata          Json?     // Additional user preferences and settings
+
+  // Timestamps
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+  lastLoginAt       DateTime? @map("last_login_at")
+  deletedAt         DateTime? @map("deleted_at")
+
+  // Relations
+  connectedAccounts ConnectedAccount[]
+  donationRules     DonationRule[]
+  donations         Donation[]
+  apiKeys           ApiKey[]
+  notifications     Notification[]
+  auditLogs         AuditLog[]
+  supportTickets    SupportTicket[]
+
+  @@map("users")
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  DELETED
+  PENDING_VERIFICATION
+}
+
+enum UserRole {
+  USER
+  PARTNER
+  RECIPIENT
+  ADMIN
+  SUPERADMIN
+}
+
+enum KYCStatus {
+  PENDING
+  IN_PROGRESS
+  VERIFIED
+  FAILED
+  EXPIRED
+}
+
+model WaitlistSignup {
+  id              String   @id @default(uuid())
+  email           String   @unique
+  referralSource  String?  @map("referral_source")
+  metadata        Json?    // UTM params, user agent, etc.
+  status          WaitlistStatus @default(PENDING)
+  invitedAt       DateTime? @map("invited_at")
+  convertedUserId String?  @map("converted_user_id")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  @@map("waitlist_signups")
+}
+
+enum WaitlistStatus {
+  PENDING
+  INVITED
+  CONVERTED
+}
+
+// ============================================================================
+// PARTNER & INTEGRATION MANAGEMENT
+// ============================================================================
+
+model Partner {
+  id                String         @id @default(uuid())
+  name              String
+  companyName       String         @map("company_name")
+  email             String         @unique
+  integrationType   IntegrationType @map("integration_type")
+  status            PartnerStatus  @default(PENDING)
+  description       String?
+  website           String?
+  logoUrl           String?        @map("logo_url")
+  webhookSecret     String?        @map("webhook_secret") // For signing webhooks
+  metadata          Json?
+
+  // API Configuration
+  apiVersion        String?        @map("api_version")
+  rateLimitTier     String?        @map("rate_limit_tier") // basic, standard, premium
+
+  createdAt         DateTime       @default(now()) @map("created_at")
+  updatedAt         DateTime       @updatedAt @map("updated_at")
+  approvedAt        DateTime?      @map("approved_at")
+  approvedBy        String?        @map("approved_by")
+
+  // Relations
+  apiKeys           ApiKey[]
+  webhooks          Webhook[]
+  connectedAccounts ConnectedAccount[]
+  tradeEvents       TradeEvent[]
+
+  @@map("partners")
+}
+
+enum IntegrationType {
+  BROKER
+  EXCHANGE
+  WALLET
+  APP
+  OTHER
+}
+
+enum PartnerStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+  REJECTED
+}
+
+model PartnerRequest {
+  id              String          @id @default(uuid())
+  companyName     String          @map("company_name")
+  email           String
+  integrationType IntegrationType @map("integration_type")
+  description     String
+  website         String?
+  contactName     String?         @map("contact_name")
+  status          RequestStatus   @default(PENDING)
+  reviewedBy      String?         @map("reviewed_by")
+  reviewedAt      DateTime?       @map("reviewed_at")
+  reviewNotes     String?         @map("review_notes")
+  createdAt       DateTime        @default(now()) @map("created_at")
+
+  @@map("partner_requests")
+}
+
+enum RequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model ApiKey {
+  id          String    @id @default(uuid())
+  userId      String?   @map("user_id")
+  partnerId   String?   @map("partner_id")
+  keyHash     String    @unique @map("key_hash") // Hashed API key
+  name        String
+  scopes      String[]  // Array of permission scopes
+  role        ApiKeyRole @default(USER)
+  status      ApiKeyStatus @default(ACTIVE)
+  expiresAt   DateTime? @map("expires_at")
+  lastUsedAt  DateTime? @map("last_used_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  revokedAt   DateTime? @map("revoked_at")
+
+  user    User?    @relation(fields: [userId], references: [id])
+  partner Partner? @relation(fields: [partnerId], references: [id])
+
+  @@map("api_keys")
+}
+
+enum ApiKeyRole {
+  USER
+  PARTNER
+  ADMIN
+  AGENT // For MCP clients
+}
+
+enum ApiKeyStatus {
+  ACTIVE
+  REVOKED
+  EXPIRED
+}
+
+// ============================================================================
+// TRADING CONNECTIONS
+// ============================================================================
+
+model ConnectedAccount {
+  id                  String       @id @default(uuid())
+  userId              String       @map("user_id")
+  partnerId           String?      @map("partner_id")
+  provider            String       // robinhood, coinbase, alpaca, etc.
+  providerAccountId   String       @map("provider_account_id")
+  accountType         AccountType  @map("account_type")
+  accountName         String?      @map("account_name")
+
+  // Encrypted credentials
+  accessToken         String?      @map("access_token") // Encrypted
+  refreshToken        String?      @map("refresh_token") // Encrypted
+  tokenExpiresAt      DateTime?    @map("token_expires_at")
+
+  status              ConnectionStatus @default(ACTIVE)
+  lastSyncedAt        DateTime?    @map("last_synced_at")
+  lastError           String?      @map("last_error")
+  metadata            Json?
+
+  createdAt           DateTime     @default(now()) @map("created_at")
+  updatedAt           DateTime     @updatedAt @map("updated_at")
+  disconnectedAt      DateTime?    @map("disconnected_at")
+
+  user        User     @relation(fields: [userId], references: [id])
+  partner     Partner? @relation(fields: [partnerId], references: [id])
+  tradeEvents TradeEvent[]
+
+  @@unique([userId, provider, providerAccountId])
+  @@map("connected_accounts")
+}
+
+enum AccountType {
+  BROKERAGE
+  CRYPTO
+  BANK
+  WALLET
+}
+
+enum ConnectionStatus {
+  ACTIVE
+  DISCONNECTED
+  ERROR
+  EXPIRED
+}
+
+// ============================================================================
+// TRADING & DONATIONS
+// ============================================================================
+
+model TradeEvent {
+  id                String      @id @default(uuid())
+  userId            String      @map("user_id")
+  connectionId      String      @map("connection_id")
+  partnerId         String?     @map("partner_id")
+  externalTradeId   String      @map("external_trade_id") // Partner's trade ID
+
+  // Trade details
+  symbol            String
+  side              TradeSide
+  quantity          Float       @db.DoublePrecision
+  price             Float       @db.DoublePrecision
+  tradeValue        Float       @db.DoublePrecision @map("trade_value")
+  fees              Float?      @db.DoublePrecision
+  currency          String      @default("USD")
+
+  // Trade metadata
+  tradeTimestamp    DateTime    @map("trade_timestamp")
+  orderType         String?     @map("order_type") // market, limit, stop
+
+  // Processing status
+  status            TradeStatus @default(RECEIVED)
+  processedAt       DateTime?   @map("processed_at")
+  errorMessage      String?     @map("error_message")
+
+  metadata          Json?
+  createdAt         DateTime    @default(now()) @map("created_at")
+
+  connection  ConnectedAccount @relation(fields: [connectionId], references: [id])
+  partner     Partner?         @relation(fields: [partnerId], references: [id])
+  donations   Donation[]
+
+  @@unique([partnerId, externalTradeId])
+  @@index([userId])
+  @@index([status])
+  @@index([tradeTimestamp])
+  @@map("trade_events")
+}
+
+enum TradeSide {
+  BUY
+  SELL
+}
+
+enum TradeStatus {
+  RECEIVED
+  PROCESSING
+  PROCESSED
+  FAILED
+  CANCELLED
+}
+
+model DonationRule {
+  id            String     @id @default(uuid())
+  userId        String     @map("user_id")
+  name          String
+  description   String?
+
+  // Rule configuration
+  ruleType      RuleType   @map("rule_type")
+  value         Float      @db.DoublePrecision // Percentage (0-100) or dollar amount
+
+  // Conditions (stored as JSON for flexibility)
+  conditions    Json?      // { symbols: [], minTradeValue: 100, onlyProfitable: true }
+
+  // Allocations to recipients/campaigns
+  allocations   Json       // [{ recipientId: "xxx", percentage: 50 }, ...]
+
+  // Caps and limits
+  dailyCap      Float?     @db.DoublePrecision @map("daily_cap")
+  monthlyCap    Float?     @db.DoublePrecision @map("monthly_cap")
+  perTradeCap   Float?     @db.DoublePrecision @map("per_trade_cap")
+  minDonation   Float?     @db.DoublePrecision @map("min_donation") @default(0.01)
+
+  status        RuleStatus @default(ACTIVE)
+  priority      Int        @default(0) // For rule ordering
+
+  createdAt     DateTime   @default(now()) @map("created_at")
+  updatedAt     DateTime   @updatedAt @map("updated_at")
+  pausedAt      DateTime?  @map("paused_at")
+
+  user      User       @relation(fields: [userId], references: [id])
+  donations Donation[]
+
+  @@index([userId, status])
+  @@map("donation_rules")
+}
+
+enum RuleType {
+  PERCENTAGE
+  FLAT
+  ROUNDUP
+  CONDITIONAL
+}
+
+enum RuleStatus {
+  ACTIVE
+  PAUSED
+  DELETED
+}
+
+model Donation {
+  id              String         @id @default(uuid())
+  userId          String         @map("user_id")
+  tradeId         String?        @map("trade_id")
+  ruleId          String?        @map("rule_id")
+
+  // Donation amount
+  amount          Float          @db.DoublePrecision
+  currency        String         @default("USD")
+
+  // Processing status
+  status          DonationStatus @default(PENDING)
+  idempotencyKey  String?        @unique @map("idempotency_key")
+
+  // Settlement tracking
+  settledAt       DateTime?      @map("settled_at")
+  disbursedAt     DateTime?      @map("disbursed_at")
+
+  // Error handling
+  errorMessage    String?        @map("error_message")
+  retryCount      Int            @default(0) @map("retry_count")
+
+  metadata        Json?
+  createdAt       DateTime       @default(now()) @map("created_at")
+  updatedAt       DateTime       @updatedAt @map("updated_at")
+
+  user        User                 @relation(fields: [userId], references: [id])
+  trade       TradeEvent?          @relation(fields: [tradeId], references: [id])
+  rule        DonationRule?        @relation(fields: [ruleId], references: [id])
+  allocations DonationAllocation[]
+
+  @@index([userId, status])
+  @@index([status, createdAt])
+  @@map("donations")
+}
+
+enum DonationStatus {
+  PENDING
+  ALLOCATED
+  SETTLED
+  DISBURSED
+  FAILED
+  REVERSED
+}
+
+model DonationAllocation {
+  id          String   @id @default(uuid())
+  donationId  String   @map("donation_id")
+  recipientId String   @map("recipient_id")
+  campaignId  String?  @map("campaign_id")
+
+  amount      Float    @db.DoublePrecision
+  percentage  Float    @db.DoublePrecision // What % of the donation
+  currency    String   @default("USD")
+
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  donation  Donation   @relation(fields: [donationId], references: [id])
+  recipient Recipient  @relation(fields: [recipientId], references: [id])
+  campaign  Campaign?  @relation(fields: [campaignId], references: [id])
+
+  @@index([recipientId])
+  @@index([campaignId])
+  @@map("donation_allocations")
+}
+
+// ============================================================================
+// RECIPIENTS & CAMPAIGNS
+// ============================================================================
+
+model Recipient {
+  id                String          @id @default(uuid())
+  name              String
+  description       String?
+  category          String?         // health, education, environment, etc.
+
+  // Tax and legal
+  ein               String?         @unique // Encrypted Tax ID
+  legalName         String?         @map("legal_name")
+  organizationType  String?         @map("organization_type") // 501c3, etc.
+
+  // Verification
+  status            RecipientStatus @default(PENDING)
+  verificationLevel String?         @map("verification_level") // basic, standard, enhanced
+  verifiedAt        DateTime?       @map("verified_at")
+  verifiedBy        String?         @map("verified_by")
+
+  // Contact & Payout
+  email             String
+  phone             String?
+  website           String?
+  logoUrl           String?         @map("logo_url")
+  payoutInfo        Json?           @map("payout_info") // Encrypted bank/payment details
+
+  // Impact tracking
+  totalReceived     Float           @default(0) @db.DoublePrecision @map("total_received")
+  donorCount        Int             @default(0) @map("donor_count")
+
+  metadata          Json?
+  createdAt         DateTime        @default(now()) @map("created_at")
+  updatedAt         DateTime        @updatedAt @map("updated_at")
+  suspendedAt       DateTime?       @map("suspended_at")
+
+  campaigns   Campaign[]
+  allocations DonationAllocation[]
+  payouts     Payout[]
+  impactUpdates ImpactUpdate[]
+
+  @@map("recipients")
+}
+
+enum RecipientStatus {
+  PENDING
+  VERIFIED
+  ACTIVE
+  SUSPENDED
+  DEACTIVATED
+}
+
+model Campaign {
+  id              String         @id @default(uuid())
+  recipientId     String         @map("recipient_id")
+  name            String
+  description     String?
+  story           String?        @db.Text
+
+  // Fundraising goals
+  goalAmount      Float?         @db.DoublePrecision @map("goal_amount")
+  raisedAmount    Float          @default(0) @db.DoublePrecision @map("raised_amount")
+  currency        String         @default("USD")
+
+  // Campaign timeline
+  status          CampaignStatus @default(ACTIVE)
+  startDate       DateTime?      @map("start_date")
+  endDate         DateTime?      @map("end_date")
+
+  // Media
+  imageUrl        String?        @map("image_url")
+  videoUrl        String?        @map("video_url")
+
+  metadata        Json?
+  createdAt       DateTime       @default(now()) @map("created_at")
+  updatedAt       DateTime       @updatedAt @map("updated_at")
+
+  recipient   Recipient @relation(fields: [recipientId], references: [id])
+  allocations DonationAllocation[]
+  impactUpdates ImpactUpdate[]
+
+  @@index([status, endDate])
+  @@map("campaigns")
+}
+
+enum CampaignStatus {
+  DRAFT
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+model ImpactUpdate {
+  id          String   @id @default(uuid())
+  recipientId String?  @map("recipient_id")
+  campaignId  String?  @map("campaign_id")
+
+  title       String
+  content     String   @db.Text
+  imageUrl    String?  @map("image_url")
+
+  publishedAt DateTime @default(now()) @map("published_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  recipient Recipient? @relation(fields: [recipientId], references: [id])
+  campaign  Campaign?  @relation(fields: [campaignId], references: [id])
+
+  @@map("impact_updates")
+}
+
+// ============================================================================
+// PAYOUTS
+// ============================================================================
+
+model Payout {
+  id              String        @id @default(uuid())
+  recipientId     String        @map("recipient_id")
+
+  amount          Float         @db.DoublePrecision
+  currency        String        @default("USD")
+
+  // Payment details
+  paymentMethod   String        @map("payment_method") // stripe, wire, crypto
+  paymentReference String?      @map("payment_reference") // External payment ID
+
+  status          PayoutStatus  @default(SCHEDULED)
+
+  scheduledAt     DateTime      @map("scheduled_at")
+  processedAt     DateTime?     @map("processed_at")
+  completedAt     DateTime?     @map("completed_at")
+  failedAt        DateTime?     @map("failed_at")
+
+  errorMessage    String?       @map("error_message")
+  retryCount      Int           @default(0) @map("retry_count")
+
+  metadata        Json?
+  createdAt       DateTime      @default(now()) @map("created_at")
+
+  recipient Recipient @relation(fields: [recipientId], references: [id])
+
+  @@index([recipientId, status])
+  @@index([status, scheduledAt])
+  @@map("payouts")
+}
+
+enum PayoutStatus {
+  SCHEDULED
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+// ============================================================================
+// WEBHOOKS
+// ============================================================================
+
+model Webhook {
+  id          String        @id @default(uuid())
+  partnerId   String        @map("partner_id")
+
+  url         String
+  events      String[]      // Array of event types to subscribe to
+  secret      String        // For HMAC signature
+  status      WebhookStatus @default(ACTIVE)
+
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+
+  partner     Partner           @relation(fields: [partnerId], references: [id])
+  deliveries  WebhookDelivery[]
+
+  @@map("webhooks")
+}
+
+enum WebhookStatus {
+  ACTIVE
+  DISABLED
+  FAILED
+}
+
+model WebhookDelivery {
+  id            String          @id @default(uuid())
+  webhookId     String          @map("webhook_id")
+
+  eventType     String          @map("event_type")
+  payload       Json
+
+  status        DeliveryStatus  @default(PENDING)
+  attempts      Int             @default(0)
+  lastAttemptAt DateTime?       @map("last_attempt_at")
+  nextAttemptAt DateTime?       @map("next_attempt_at")
+
+  responseCode  Int?            @map("response_code")
+  responseBody  String?         @map("response_body")
+  errorMessage  String?         @map("error_message")
+
+  createdAt     DateTime        @default(now()) @map("created_at")
+  deliveredAt   DateTime?       @map("delivered_at")
+
+  webhook Webhook @relation(fields: [webhookId], references: [id])
+
+  @@index([webhookId, status])
+  @@index([status, nextAttemptAt])
+  @@map("webhook_deliveries")
+}
+
+enum DeliveryStatus {
+  PENDING
+  DELIVERED
+  FAILED
+  ABANDONED
+}
+
+// ============================================================================
+// NOTIFICATIONS
+// ============================================================================
+
+model Notification {
+  id        String             @id @default(uuid())
+  userId    String             @map("user_id")
+
+  type      String             // donation_success, payout_completed, etc.
+  title     String
+  message   String
+
+  status    NotificationStatus @default(UNREAD)
+  readAt    DateTime?          @map("read_at")
+
+  metadata  Json?
+  createdAt DateTime           @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId, status])
+  @@map("notifications")
+}
+
+enum NotificationStatus {
+  UNREAD
+  READ
+  ARCHIVED
+}
+
+// ============================================================================
+// AUDIT & COMPLIANCE
+// ============================================================================
+
+model AuditLog {
+  id          String   @id @default(uuid())
+
+  actorType   String   @map("actor_type") // user, partner, admin, system
+  actorId     String?  @map("actor_id")
+
+  action      String   // create, update, delete, etc.
+  entityType  String   @map("entity_type") // user, donation, payout, etc.
+  entityId    String   @map("entity_id")
+
+  changes     Json?    // Before/after values
+
+  ipAddress   String?  @map("ip_address")
+  userAgent   String?  @map("user_agent")
+
+  metadata    Json?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  user User? @relation(fields: [actorId], references: [id])
+
+  @@index([entityType, entityId])
+  @@index([actorId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+model FraudFlag {
+  id          String      @id @default(uuid())
+
+  entityType  String      @map("entity_type") // user, donation, trade, etc.
+  entityId    String      @map("entity_id")
+
+  flagType    String      @map("flag_type") // velocity, anomaly, pattern, etc.
+  severity    Severity
+  reason      String
+
+  status      FlagStatus  @default(PENDING)
+
+  reviewedBy  String?     @map("reviewed_by")
+  reviewedAt  DateTime?   @map("reviewed_at")
+  resolution  String?
+
+  metadata    Json?
+  createdAt   DateTime    @default(now()) @map("created_at")
+
+  @@index([entityType, entityId])
+  @@index([status, severity])
+  @@map("fraud_flags")
+}
+
+enum Severity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum FlagStatus {
+  PENDING
+  INVESTIGATING
+  RESOLVED
+  FALSE_POSITIVE
+}
+
+// ============================================================================
+// SUPPORT
+// ============================================================================
+
+model SupportTicket {
+  id          String        @id @default(uuid())
+  userId      String?       @map("user_id")
+
+  subject     String
+  description String        @db.Text
+  category    String?       // billing, technical, account, etc.
+  priority    Priority      @default(MEDIUM)
+  status      TicketStatus  @default(OPEN)
+
+  assignedTo  String?       @map("assigned_to")
+  resolvedAt  DateTime?     @map("resolved_at")
+  closedAt    DateTime?     @map("closed_at")
+
+  metadata    Json?
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+
+  user User? @relation(fields: [userId], references: [id])
+
+  @@index([userId, status])
+  @@index([status, priority])
+  @@map("support_tickets")
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  WAITING_FOR_RESPONSE
+  RESOLVED
+  CLOSED
+}
