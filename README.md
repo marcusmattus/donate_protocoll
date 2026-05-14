@@ -26,7 +26,7 @@ donate connect --exchange binance
 donate run
 ```
 
-See the **[CLI Quick Start guide →](./app/cli/page.tsx)** (or visit `/cli` on the web app) for full documentation.
+See the **[CLI Quick Start guide →](./CLI_QUICK_START.md)** (or visit `/cli` on the web app) for full documentation.
 
 ## Pages
 
