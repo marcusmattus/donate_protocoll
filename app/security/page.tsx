@@ -90,7 +90,7 @@ export default function Security() {
               <div className="space-y-4">
                   {/* Smart Contracts */}
                   <div className="glass-card rounded-3xl overflow-hidden border border-slate-200/50">
-                      <button onClick={() => setActiveFaq(activeFaq === 1 ? 0 : 1)} className="w-full p-8 flex justify-between items-center text-left hover:bg-white/50 transition-colors">
+                      <button onClick={() => setActiveFaq(activeFaq === 1 ? 0 : 1)} aria-expanded={activeFaq === 1} className="w-full p-8 flex justify-between items-center text-left hover:bg-white/50 transition-colors">
                           <div className="flex items-center gap-6">
                               <span className="font-display text-2xl font-bold text-brand-primary/40">01</span>
                               <span className="text-xl font-bold">Smart Contract Infrastructure</span>
@@ -136,7 +136,7 @@ export default function Security() {
 
                   {/* API Security */}
                   <div className="glass-card rounded-3xl overflow-hidden border border-slate-200/50">
-                      <button onClick={() => setActiveFaq(activeFaq === 2 ? 0 : 2)} className="w-full p-8 flex justify-between items-center text-left hover:bg-white/50 transition-colors">
+                      <button onClick={() => setActiveFaq(activeFaq === 2 ? 0 : 2)} aria-expanded={activeFaq === 2} className="w-full p-8 flex justify-between items-center text-left hover:bg-white/50 transition-colors">
                           <div className="flex items-center gap-6">
                               <span className="font-display text-2xl font-bold text-brand-primary/40">02</span>
                               <span className="text-xl font-bold">API Scope & Security</span>
@@ -174,7 +174,7 @@ export default function Security() {
 
                   {/* Tax & Documentation */}
                   <div className="glass-card rounded-3xl overflow-hidden border border-slate-200/50">
-                      <button onClick={() => setActiveFaq(activeFaq === 3 ? 0 : 3)} className="w-full p-8 flex justify-between items-center text-left hover:bg-white/50 transition-colors">
+                      <button onClick={() => setActiveFaq(activeFaq === 3 ? 0 : 3)} aria-expanded={activeFaq === 3} className="w-full p-8 flex justify-between items-center text-left hover:bg-white/50 transition-colors">
                           <div className="flex items-center gap-6">
                               <span className="font-display text-2xl font-bold text-brand-primary/40">03</span>
                               <span className="text-xl font-bold">Tax Documentation & Deduction</span>

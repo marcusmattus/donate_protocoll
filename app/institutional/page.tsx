@@ -35,7 +35,7 @@ export default function Institutional() {
                       </div>
                       <h1 className="font-display text-5xl md:text-6xl font-bold leading-[1.1] mb-8 tracking-tighter">
                           Empower your users. <br/>
-                          <span className="text-brand-accent">Exponetialize</span> impact.
+                          <span className="text-brand-accent">Exponentially scale</span> impact.
                       </h1>
                       <p className="text-xl text-slate-500 mb-12 leading-relaxed">
                           Join the global ecosystem of exchanges, brokers, and Layer-1 protocols integrating the Donate Protocol standard. Turn volume into virtue with a single integration.

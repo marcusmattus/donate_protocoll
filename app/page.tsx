@@ -4,11 +4,27 @@ import { motion } from 'motion/react';
 import Link from 'next/link';
 import Navigation from '@/components/Navigation';
 import Counter from '@/components/Counter';
-import { ArrowRight, CheckCircle2, Shield, Link as LinkIcon, Users, TrendingUp, BarChart2 } from 'lucide-react';
+import { ArrowRight, CheckCircle2, Shield, Link as LinkIcon, Users, TrendingUp, BarChart2, Copy, Check, Terminal } from 'lucide-react';
 import { useState } from 'react';
+
+const INSTALL_COMMANDS: Record<string, string> = {
+  npm: 'npm install -g @donate-protocol/cli',
+  pnpm: 'pnpm add -g @donate-protocol/cli',
+  yarn: 'yarn global add @donate-protocol/cli',
+  bun: 'bun add -g @donate-protocol/cli',
+};
 
 export default function Home() {
   const [activeFaq, setActiveFaq] = useState<number | null>(null);
+  const [activePm, setActivePm] = useState<string>('npm');
+  const [installCopied, setInstallCopied] = useState(false);
+
+  const copyInstall = () => {
+    navigator.clipboard.writeText(INSTALL_COMMANDS[activePm]).then(() => {
+      setInstallCopied(true);
+      setTimeout(() => setInstallCopied(false), 2000);
+    });
+  };
 
   return (
     <>
@@ -45,7 +61,16 @@ export default function Home() {
                         <Link href="/waitlist" className="bg-brand-primary text-white px-8 py-4 rounded-xl font-bold text-lg hover:scale-105 transition-all shadow-lg shadow-brand-primary/20 flex items-center justify-center">
                             Join Waitlist
                         </Link>
-                        <a href="#impact" className="flex items-center gap-2 px-6 py-4 font-semibold opacity-80 hover:opacity-100 transition-opacity">
+                        <a
+                          href="https://github.com/marcusmattus/donate_protocoll"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-2 px-6 py-4 font-semibold border border-brand-dark/20 rounded-xl hover:border-brand-dark/40 transition-all"
+                        >
+                          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path fillRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clipRule="evenodd" /></svg>
+                          View on GitHub
+                        </a>
+                        <a href="#how-it-works" className="flex items-center gap-2 px-6 py-4 font-semibold opacity-80 hover:opacity-100 transition-opacity">
                             View Live Impact
                             <ArrowRight className="w-4 h-4" />
                         </a>
@@ -95,6 +120,123 @@ export default function Home() {
                 <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-slate-400">Scroll</span>
                 <div className="w-px h-12 bg-gradient-to-b from-brand-primary to-transparent animate-scroll-indicator"></div>
             </div>
+        </section>
+
+        {/* CLI Quick Start Section */}
+        <section className="py-24 relative bg-brand-dark overflow-hidden">
+          {/* Subtle grid background */}
+          <div className="absolute inset-0 opacity-5" style={{backgroundImage: 'linear-gradient(rgba(255,255,255,.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.1) 1px, transparent 1px)', backgroundSize: '40px 40px'}}></div>
+          <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-brand-primary/10 rounded-full blur-[120px] pointer-events-none"></div>
+
+          <div className="max-w-7xl mx-auto px-6 relative z-10">
+            <div className="text-center mb-14">
+              <div className="inline-flex items-center gap-2 bg-brand-accent/20 border border-brand-accent/30 px-4 py-1.5 rounded-full mb-6">
+                <Terminal className="w-3.5 h-3.5 text-brand-accent" />
+                <span className="text-xs font-bold uppercase tracking-widest text-brand-accent">Developer Quick Start</span>
+              </div>
+              <h2 className="font-display text-4xl md:text-5xl font-bold tracking-tighter mb-4 text-white">
+                Up and running <span className="text-brand-accent">in 30 seconds.</span>
+              </h2>
+              <p className="text-slate-400 text-xl max-w-2xl mx-auto">
+                Install the CLI, connect your exchange, and start donating from every trade.
+              </p>
+            </div>
+
+            <div className="grid lg:grid-cols-2 gap-8 max-w-5xl mx-auto mb-16">
+              {/* Install block */}
+              <div>
+                <p className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-3">1. Install</p>
+                {/* Tab switcher */}
+                <div className="flex gap-2 mb-3">
+                  {['npm', 'pnpm', 'yarn', 'bun'].map(pm => (
+                    <button
+                      key={pm}
+                      onClick={() => setActivePm(pm)}
+                      className={`px-4 py-1.5 rounded-lg text-xs font-mono font-bold transition-all ${activePm === pm ? 'bg-brand-primary text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}
+                    >
+                      {pm}
+                    </button>
+                  ))}
+                </div>
+                {/* Terminal window */}
+                <div className="bg-slate-950 rounded-2xl overflow-hidden shadow-2xl border border-slate-700/50">
+                  <div className="flex items-center gap-2 px-4 py-3 bg-slate-800/80 border-b border-slate-700">
+                    <div className="w-3 h-3 rounded-full bg-red-400/80"></div>
+                    <div className="w-3 h-3 rounded-full bg-yellow-400/80"></div>
+                    <div className="w-3 h-3 rounded-full bg-green-400/80"></div>
+                    <span className="ml-2 text-slate-500 text-xs font-mono">terminal</span>
+                    <button
+                      onClick={copyInstall}
+                      aria-label="Copy install command"
+                      className="ml-auto flex items-center gap-1.5 text-slate-400 hover:text-white transition-colors text-xs font-mono"
+                    >
+                      {installCopied ? (
+                        <><Check className="w-3.5 h-3.5 text-green-400" /><span className="text-green-400">Copied!</span></>
+                      ) : (
+                        <><Copy className="w-3.5 h-3.5" />Copy</>
+                      )}
+                    </button>
+                  </div>
+                  <div className="p-5 font-mono text-sm">
+                    <div className="flex items-start gap-2">
+                      <span className="text-brand-accent select-none">$</span>
+                      <span className="text-slate-100 break-all">{INSTALL_COMMANDS[activePm]}</span>
+                    </div>
+                    <div className="mt-3 text-green-400 text-xs">✓ @donate-protocol/cli installed successfully</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Run commands block */}
+              <div>
+                <p className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-3">2. Connect &amp; Run</p>
+                <div className="bg-slate-950 rounded-2xl overflow-hidden shadow-2xl border border-slate-700/50" style={{marginTop: '2.25rem'}}>
+                  <div className="flex items-center gap-2 px-4 py-3 bg-slate-800/80 border-b border-slate-700">
+                    <div className="w-3 h-3 rounded-full bg-red-400/80"></div>
+                    <div className="w-3 h-3 rounded-full bg-yellow-400/80"></div>
+                    <div className="w-3 h-3 rounded-full bg-green-400/80"></div>
+                    <span className="ml-2 text-slate-500 text-xs font-mono">terminal</span>
+                  </div>
+                  <div className="p-5 font-mono text-sm space-y-2">
+                    <div className="flex gap-2"><span className="text-brand-accent select-none">$</span><span className="text-slate-100">donate init</span></div>
+                    <div className="flex gap-2"><span className="text-brand-accent select-none">$</span><span className="text-slate-100">donate connect --exchange binance</span></div>
+                    <div className="text-green-400 text-xs pl-4">✓ Connected to Binance sandbox</div>
+                    <div className="flex gap-2"><span className="text-brand-accent select-none">$</span><span className="text-slate-100">donate config --rate 0.1%</span></div>
+                    <div className="flex gap-2"><span className="text-brand-accent select-none">$</span><span className="text-slate-100">donate run</span></div>
+                    <div className="text-slate-400 text-xs pl-4">Watching trades… micro-donations active ✓</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* 3-step setup cards */}
+            <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto mb-12">
+              {[
+                { step: '01', label: 'Install', title: 'Install the CLI', desc: 'One command installs the @donate-protocol/cli globally. Works with npm, pnpm, yarn, or bun.' },
+                { step: '02', label: 'Connect', title: 'Link Your Exchange', desc: 'Add a read-only API key for Binance, Coinbase, Kraken or any supported exchange. No withdrawal access needed.' },
+                { step: '03', label: 'Run', title: 'Start Donating', desc: 'Execute `donate run` and the protocol silently rounds up or deducts micro-amounts from every trade you make.' },
+              ].map(({ step, label, title, desc }) => (
+                <motion.div
+                  key={step}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: '-60px' }}
+                  className="bg-slate-800/60 border border-slate-700/60 rounded-2xl p-8 backdrop-blur"
+                >
+                  <div className="text-brand-accent font-mono font-bold text-xs mb-3">{step} / {label}</div>
+                  <h3 className="text-white font-bold text-xl mb-2">{title}</h3>
+                  <p className="text-slate-400 text-sm leading-relaxed">{desc}</p>
+                </motion.div>
+              ))}
+            </div>
+
+            <div className="text-center">
+              <Link href="/cli" className="inline-flex items-center gap-2 font-bold text-brand-accent hover:text-white transition-colors">
+                Read the full CLI guide
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
+          </div>
         </section>
 
         {/* Metrics Ticker */}
@@ -297,6 +439,7 @@ export default function Home() {
                         <div key={i} className="border-b border-slate-200">
                             <button 
                                 onClick={() => setActiveFaq(activeFaq === i ? null : i)}
+                                aria-expanded={activeFaq === i}
                                 className="w-full py-6 flex justify-between items-center text-left focus:outline-none group"
                             >
                                 <span className="text-lg font-bold group-hover:text-brand-primary transition-colors">{faq.q}</span>
@@ -336,6 +479,7 @@ export default function Home() {
                           <h4 className="font-bold mb-6">Platform</h4>
                           <ul className="space-y-4 text-slate-500 text-sm">
                               <li><a href="#how-it-works" className="hover:text-brand-primary transition-colors">How it Works</a></li>
+                              <li><Link href="/cli" className="hover:text-brand-primary transition-colors">CLI Quick Start</Link></li>
                               <li><Link href="/institutional" className="hover:text-brand-primary transition-colors">Integrations</Link></li>
                               <li><a href="#" className="hover:text-brand-primary transition-colors">Fees</a></li>
                               <li><a href="#" className="hover:text-brand-primary transition-colors">Tax Reports</a></li>
