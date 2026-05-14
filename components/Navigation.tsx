@@ -32,6 +32,7 @@ export default function Navigation() {
             
             <div className="hidden md:flex items-center gap-8 font-medium text-sm opacity-80">
                 <Link href="/#how-it-works" className="hover:opacity-100 transition-opacity">How it Works</Link>
+                <Link href="/cli" className="hover:opacity-100 transition-opacity">CLI Docs</Link>
                 <Link href="/institutional" className="hover:opacity-100 transition-opacity">Integrations</Link>
                 <Link href="/#impact" className="hover:opacity-100 transition-opacity">Impact</Link>
                 <Link href="/security" className="hover:opacity-100 transition-opacity">Security</Link>

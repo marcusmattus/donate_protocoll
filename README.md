@@ -1,17 +1,84 @@
 # Donate Protocol
 
-A production-ready social impact trading platform that enables traders to automatically donate micro-amounts from their trades to support real people and communities.
+> Trade normally. Donate micro-amounts automatically.
+
+[![Build](https://img.shields.io/github/actions/workflow/status/marcusmattus/donate_protocoll/ci.yml?label=build)](https://github.com/marcusmattus/donate_protocoll)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![npm version](https://img.shields.io/badge/npm-%40donate--protocol%2Fcli-orange)](https://www.npmjs.com/package/@donate-protocol/cli)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
+
+The social impact trading layer that enables traders to automatically donate micro-amounts from their trades to support real-world communities — without affecting their strategy.
+
+## Quick Start
+
+```bash
+# Install the CLI
+npm install -g @donate-protocol/cli
+# or: pnpm add -g @donate-protocol/cli | yarn global add @donate-protocol/cli | bun add -g @donate-protocol/cli
+
+# Initialize config
+donate init
+
+# Connect your exchange (read-only API key)
+donate connect --exchange binance
+
+# Start donating from every trade
+donate run
+```
+
+See the **[CLI Quick Start guide →](./CLI_QUICK_START.md)** (or visit `/cli` on the web app) for full documentation.
+
+## Pages
+
+| Page | Path | Description |
+|------|------|-------------|
+| Home | `app/page.tsx` | Landing page with CLI Quick Start section |
+| CLI Guide | `app/cli/page.tsx` | Full CLI reference & quick-start walkthrough |
+| Waitlist | `app/waitlist/page.tsx` | Early-access signup form |
+| Institutional | `app/institutional/page.tsx` | Partner / exchange application |
+| Security | `app/security/page.tsx` | Trust & transparency center |
+| Success | `app/success/page.tsx` | Post-submission confirmation |
 
 ## Overview
 
 Donate Protocol combines:
-- **MCP Server**: AI-native interface for agentic interactions
-- **REST API**: Partner and application integration
-- **Plugin SDK**: Embeddable widgets and typed SDKs
-- **Web Platform**: Landing page, dashboards, admin tools
-- **Event-Driven Core**: Scalable donation processing
+- **CLI** — install & run locally in seconds
+- **MCP Server** — AI-native interface for agentic interactions
+- **REST API** — Partner and application integration
+- **Plugin SDK** — Embeddable widgets and typed SDKs
+- **Web Platform** — Landing page, dashboards, admin tools
+- **Event-Driven Core** — Scalable donation processing
 
-## Quick Start
+## Project Structure
+
+```
+donate-protocol/
+├── app/                  # Next.js App Router pages
+│   ├── page.tsx          # Home / landing (CLI-first)
+│   ├── cli/page.tsx      # CLI quick-start guide
+│   ├── waitlist/         # Early-access waitlist
+│   ├── institutional/    # Partner application
+│   ├── security/         # Trust center
+│   └── success/          # Confirmation page
+├── components/           # Shared React components
+├── apps/
+│   ├── web/              # Next.js public web app
+│   ├── admin/            # Admin dashboard
+│   ├── api/              # REST API server
+│   └── mcp-server/       # MCP server for AI agents
+├── packages/
+│   ├── database/         # Prisma schema and client
+│   ├── ui/               # Shared React components
+│   ├── sdk/              # TypeScript SDK for partners
+│   ├── integrations/     # Broker/exchange integrations
+│   ├── events/           # Event schemas and queue
+│   ├── auth/             # Authentication utilities
+│   ├── config/           # Shared configuration
+│   └── utils/            # Shared utilities
+└── docs/                 # Documentation
+```
+
+## Local Development
 
 ### Prerequisites
 
@@ -47,34 +114,14 @@ pnpm dev
 - **MCP Server**: stdio (use with MCP client)
 - **Admin Dashboard**: http://localhost:3002
 
-## Project Structure
-
-```
-donate-protocol/
-├── apps/
-│   ├── web/              # Next.js public web app
-│   ├── admin/            # Admin dashboard
-│   ├── api/              # REST API server
-│   └── mcp-server/       # MCP server for AI agents
-├── packages/
-│   ├── database/         # Prisma schema and client
-│   ├── ui/               # Shared React components
-│   ├── sdk/              # TypeScript SDK for partners
-│   ├── integrations/     # Broker/exchange integrations
-│   ├── events/           # Event schemas and queue
-│   ├── auth/             # Authentication utilities
-│   ├── config/           # Shared configuration
-│   └── utils/            # Shared utilities
-└── docs/                 # Documentation
-```
-
 ## Key Features
 
-### For Traders
-- Connect brokerage/exchange accounts
-- Set up automatic donation rules
-- Track donation history and impact
-- View supported recipients and campaigns
+### For Developers / Traders (CLI)
+- Install with one command (`npm i -g @donate-protocol/cli`)
+- Connect any major exchange with read-only API keys
+- Configure donation rules (round-up, percentage, conditional)
+- Run a persistent watcher that fires on every trade event
+- `.donaterc` config file — version-controllable, CI-friendly
 
 ### For Partners
 - REST API for trade event submission
@@ -113,7 +160,8 @@ Users create rules that automatically calculate donations:
 
 ### Security & Compliance
 
-- End-to-end encryption
+- End-to-end encryption (AES-256)
+- Non-custodial: read-only exchange API access only
 - RBAC and least privilege
 - Audit logging for all operations
 - Fraud detection and monitoring
@@ -162,6 +210,7 @@ See `.env.example` for required environment variables:
 ## Documentation
 
 - [Architecture Overview](./ARCHITECTURE.md)
+- [CLI Quick Start](./CLI_QUICK_START.md)
 - [MCP Server Guide](./docs/MCP_SERVER.md)
 - [API Reference](./docs/API_REFERENCE.md)
 - [Partner Integration Guide](./docs/PARTNER_INTEGRATION.md)
@@ -174,10 +223,11 @@ This is a production platform under active development. Please see [CONTRIBUTING
 
 ## License
 
-Proprietary - All rights reserved
+MIT — See [LICENSE](./LICENSE) for details.
 
 ## Support
 
+- GitHub Issues: https://github.com/marcusmattus/donate_protocoll/issues
 - Documentation: https://docs.donate-protocol.com
 - Email: support@donate-protocol.com
-- GitHub Issues: For bug reports and feature requests
+
