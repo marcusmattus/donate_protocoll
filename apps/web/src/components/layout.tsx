@@ -26,6 +26,7 @@ export function Navigation() {
         
         <div className="hidden md:flex items-center gap-10 font-semibold text-sm uppercase tracking-widest">
           <Link href="/" className="hover:text-brand-accent transition-colors">Home</Link>
+          <Link href="/dashboard" className="hover:text-brand-accent transition-colors">Dashboard</Link>
           <Link href="/security" className="hover:text-brand-accent transition-colors">Security</Link>
           <Link href="/institutional" className="hover:text-brand-accent transition-colors">Partners</Link>
         </div>
