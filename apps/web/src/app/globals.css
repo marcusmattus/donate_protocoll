@@ -2,16 +2,87 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  :root {
+    --brand-primary: 79 70 229;
+    --brand-accent: 20 184 166;
+    --brand-dark: 15 23 42;
+    --brand-surface: 248 250 252;
+  }
+}
+
 @layer components {
   .btn-primary {
-    @apply rounded-lg bg-primary px-4 py-2 font-medium text-white hover:bg-primary/90 transition;
+    @apply rounded-2xl bg-[rgb(var(--brand-dark))] px-7 py-3 font-bold text-white hover:scale-105 transition-transform active:scale-95 shadow-xl;
   }
 
   .btn-secondary {
-    @apply rounded-lg border-2 border-gray-300 px-4 py-2 font-medium text-gray-900 hover:border-gray-400 transition;
+    @apply rounded-2xl border-2 border-slate-200 px-6 py-3 font-bold text-slate-900 hover:border-slate-300 transition-colors;
   }
 
-  .card {
-    @apply rounded-lg bg-white p-6 shadow-sm;
+  .btn-accent {
+    @apply rounded-2xl bg-[rgb(var(--brand-accent))] px-8 py-5 font-bold text-white hover:scale-[1.02] active:scale-95 transition-all shadow-lg;
   }
+
+  .glass-card {
+    @apply bg-white/70 backdrop-blur-xl border border-white/60;
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.04);
+  }
+
+  .glass-panel {
+    @apply bg-white/60 backdrop-blur-xl border border-white/80;
+    box-shadow: 0 20px 50px -12px rgba(15, 23, 42, 0.08);
+  }
+
+  .input-field {
+    @apply w-full px-6 py-4 rounded-2xl bg-white/50 border border-slate-200 outline-none transition-all font-medium placeholder:text-slate-300;
+  }
+
+  .input-field:focus {
+    @apply border-[rgb(var(--brand-accent))];
+    box-shadow: 0 0 0 4px rgba(20, 184, 166, 0.1);
+  }
+
+  .mesh-gradient {
+    background-color: #f8fafc;
+    background-image: 
+      radial-gradient(at 0% 0%, hsla(243, 75%, 59%, 0.12) 0px, transparent 50%),
+      radial-gradient(at 100% 0%, hsla(172, 80%, 40%, 0.08) 0px, transparent 50%),
+      radial-gradient(at 50% 50%, hsla(243, 75%, 59%, 0.05) 0px, transparent 50%);
+  }
+}
+
+@layer utilities {
+  .text-brand-primary {
+    color: rgb(var(--brand-primary));
+  }
+  
+  .text-brand-accent {
+    color: rgb(var(--brand-accent));
+  }
+  
+  .text-brand-dark {
+    color: rgb(var(--brand-dark));
+  }
+
+  .bg-brand-primary {
+    background-color: rgb(var(--brand-primary));
+  }
+
+  .bg-brand-accent {
+    background-color: rgb(var(--brand-accent));
+  }
+
+  .bg-brand-dark {
+    background-color: rgb(var(--brand-dark));
+  }
+
+  .bg-brand-surface {
+    background-color: rgb(var(--brand-surface));
+  }
+}
+
+::selection {
+  background: rgb(var(--brand-accent));
+  color: white;
 }
